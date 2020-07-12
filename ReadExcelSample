@@ -1,0 +1,130 @@
+package routines;
+
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.poi.hssf.util.CellReference;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+
+import org.bson.Document;
+
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+
+
+public class ReadExcelFileExample {
+
+    private static final String FILE_PATH = "C:/Anji/study_materials/JavaWriteReadExcelFileExample/testReadStudents.xlsx";
+
+    
+    public  void getStudentsListFromExcel() {
+        FileInputStream fis = null;
+        try {
+			// Mongodb initialization parameters.
+		int port_no = 27017;
+		String host_name = "localhost", db_name = "sampledb";
+
+		// Mongodb connection string.
+		String client_url = "mongodb://" + host_name + ":" + port_no + "/" + db_name;
+		MongoClientURI uri = new MongoClientURI(client_url);
+
+		// Connecting to the mongodb server using the given client uri.
+		MongoClient mongo_client = new MongoClient(uri);
+
+		// Fetching the database from the mongodb.
+		MongoDatabase db = mongo_client.getDatabase(db_name);
+	
+            fis = new FileInputStream(FILE_PATH);
+            // Using XSSF for xlsx format, for xls use HSSF
+            Workbook workbook = new XSSFWorkbook(fis);
+            int numberOfSheets = workbook.getNumberOfSheets();
+            //looping over each workbook sheet
+            for (int i = 0; i < numberOfSheets; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                String sheetName = workbook.getSheetName(i);
+                System.out.println("sheetName>>>>>"+sheetName);
+				// Fetching the collection from the mongodb.
+		        MongoCollection<Document> coll = db.getCollection(sheetName);
+				BufferedWriter fileWriter =new BufferedWriter(new FileWriter("C:/Anji/"+sheetName+".csv"));;
+                Iterator<Row> rowIterator = sheet.iterator();
+                String rowHeaderline = "";
+                int lastcell=sheet.getRow(0).getLastCellNum();
+                      //Non empty Last cell Number or index return
+                    
+                      for(int j=0;j<=lastcell;j++)
+                      {
+                          String rowHeaderColumnString = "";
+                          try
+                          {
+                              rowHeaderColumnString = CellReference.convertNumToColString(j)+",";
+                              rowHeaderline = rowHeaderline.concat(rowHeaderColumnString);
+                              System.out.println(CellReference.convertNumToColString(j));
+                          }catch(Exception e)
+                          {
+                              e.printStackTrace();
+                              }
+                      }
+                rowHeaderline= rowHeaderline.substring(0,rowHeaderline.length()-1);
+				                String[] tempArray;
+                /* delimiter */
+                String delimiter = ",";
+                /* given string will be split by the argument delimiter provided. */
+                tempArray = rowHeaderline.split(delimiter);
+                fileWriter.newLine();
+                fileWriter.write(rowHeaderline);
+                //iterating over each row
+                while (rowIterator.hasNext()) {
+                    System.out.println("inside while");
+                    Row row = rowIterator.next();
+                    // Sample document.
+		        Document docuMent = new Document();
+                    Iterator<Cell> cellIterator = row.cellIterator();
+                    int columnCount=0;
+//                    System.out.println(row.toString());
+                    //Iterating over each cell (column wise)  in a particular row.
+                    System.out.println("columnCount   "+columnCount);
+                    int counter =0;
+                    String line = "";
+                    while (cellIterator.hasNext()) {
+                        String valueString = "";
+                        Cell cell = cellIterator.next();
+                            valueString = cell.toString()+",";
+							System.out.println("valueString>>>>>>>" +tempArray[counter]+">>>>"+cell.toString());
+							docuMent.put(tempArray[counter], cell.toString());
+                        line = line.concat(valueString);
+						counter++;
+                    }
+                    line= line.substring(0,line.length()-1);
+                    fileWriter.newLine();
+                    fileWriter.write(line); 
+                }
+				coll.insertOne(docuMent);
+                fileWriter.close();
+            }
+            fis.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+//        return studentList;
+    }
+}
