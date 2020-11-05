@@ -1,0 +1,31 @@
+import fileinput
+
+inputData = []
+
+# Read 2 lines of input into a list
+# inputData[0] will be number to count
+# inputData[1] will be N (range from 0 to N numbers)
+for line in fileinput.input():
+    inputData.append(line)
+
+
+def codeHere():
+    # Use the function to return the solution.
+    number_to_count = int(inputData[0])
+    n=int(inputData[1])
+
+    count = 0
+    # Iterate over 0 to N (example 0 to 35)
+    for i in range(0, n+1):
+        # Convert each number into string to find if number_to_count exists in that number
+        # Loop through all digits in the number (example if number is 21, it will be 2, 1)
+        num_str = str(i)
+        for digit in num_str:
+            # If digit is matching number_to_count, increment the count
+            
+            if number_to_count == int(digit):
+                count = count + 1
+    return count
+
+
+print(codeHere())
